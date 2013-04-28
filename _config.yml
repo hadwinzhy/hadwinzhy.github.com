@@ -97,3 +97,6 @@ facebook_like: false
 #FancyBox
 photos_prefix: http://hadwinzhy.github.io/
 #photos_prefix: http://127.0.0.1:4000/
+
+#weibo share
+weibo_share: true
