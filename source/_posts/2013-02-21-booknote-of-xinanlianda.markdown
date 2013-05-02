@@ -3,7 +3,7 @@ layout: post
 title: "《战争与革命中的西南联大》-- 读书笔记"
 date: 2013-02-21 13:47
 comments: true
-categories: [Book_Notes]
+tags: [Book_Notes]
 ---
 
 ## 序 ##

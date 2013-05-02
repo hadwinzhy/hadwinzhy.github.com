@@ -3,7 +3,7 @@ layout: post
 title: "台湾旅行准备"
 date: 2013-02-14 19:43
 comments: true
-categories: [Travel]
+tags: [Travel]
 ---
 ## TimeLine: ##
 

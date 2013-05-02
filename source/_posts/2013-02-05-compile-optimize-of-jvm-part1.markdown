@@ -3,7 +3,7 @@ layout: post
 title: "Compile Optimize of JVM (Compiler Period)"
 date: 2013-02-05 16:43
 comments: true
-categories: [JVM, Compiler]
+tags: [JVM, Compiler]
 ---
 
 > Compiler Period主要指javac的优化，而javac的优化体现在Syntactic Sugar

@@ -3,7 +3,7 @@ layout: post
 title: "Idea of LBS Date Service"
 date: 2013-03-01 22:59
 comments: true
-categories: [Idea]
+tags: [Idea]
 ---
 ## Purpose ##
 1. 基于LBS的约会网站

@@ -3,7 +3,7 @@ layout: post
 title: "理想和现实的故事（一）"
 date: 2013-03-07 21:37
 comments: true
-categories: [Life]
+tags: [Life]
 ---
 - “现实” 应该是一个很娘的人，他喜欢瞻前顾后、左右思量
 

@@ -3,7 +3,7 @@ layout: post
 title: "在Octopress添加新浪微博按钮 札记"
 date: 2013-03-04 00:31
 comments: true
-categories: [WebTech]
+tags: [WebTech]
 ---
 其实很简单的，只是对网络技术忘得差不多了，所以花了一点时间
 

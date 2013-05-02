@@ -3,7 +3,7 @@ layout: post
 title: "Rails Study"
 date: 2013-04-24 17:15
 comments: true
-categories: [RubyRails]
+tags: [RubyRails]
 ---
 ## Rails Philosophy ##
 1. DRY – “Don’t Repeat Yourself” – suggests that writing the same code over and over again is a bad thing.

@@ -3,7 +3,7 @@ layout: post
 title: "《算法竞赛入门经典》 exercise 1"
 date: 2013-02-22 16:49
 comments: true
-categories: [ACM]
+tags: [ACM]
 ---
 
 ## 习题2-9 分数化小数 ##

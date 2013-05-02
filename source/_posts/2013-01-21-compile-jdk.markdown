@@ -3,7 +3,7 @@ layout: post
 title: "编译 openJDK source code 札记"
 date: 2013-01-21 11:36
 comments: true
-categories: [JVM, Book_Notes ]
+tags: [JVM, Book_Notes ]
 
 ---
 ## 0. Prepare for Build ##
