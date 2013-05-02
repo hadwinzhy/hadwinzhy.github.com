@@ -1,5 +1,5 @@
 #!/bin/sh
 
 rm db.json
-rm .deploy
+rm -rf .deploy
 hexo deploy --generate
