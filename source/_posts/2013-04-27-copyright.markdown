@@ -21,7 +21,7 @@ tags: [下午茶]
 - 首先著作权有一个叫做**自动获得原则**，是指作品创作完毕，不需要履行任何手续，作品本身也不需要载有任何标记，便自动地无条件地享有著作权。([<<著作权法第23章第1节第1条>>](http://www.365ipr.com/study/23/1-1.html))
 
 - 目前很多博客网站等 都在协议内规定了内容发表之后，和用户签订协议，迫使用户放弃了部分著作权，或者让公司同时拥有授权。比如[金山词霸的论坛使用协议](http://my.iciba.com/?c=register&m=bbsProtocol)，会有一个“用户授权”条款，然后第一条就是 **发布用户授权本公司可在法律允许的范围内就发布作品加以使用**, 这样的话，该网站就可以合法转载等操作了。
-{% photo images/blog/iciba_license.png images/blog/iciba_license.png iciba_license %}
+{% img /images/blog/iciba_license.png %}
 <!-- more -->
 ##2. 转载问题 ##
 首先先要搞清**转载权利**的法律含义： 由作品的作者或作者授权许可的他人行使的，未经作者（著作权人）授权不得使用这些作品的。那么很明显 上面归属问题的授权 就是一种转载的前提
@@ -61,6 +61,6 @@ tags: [下午茶]
 
 - 强制定义， 比如 署名-非商业使用-禁止演绎协议，这个是知乎正在使用的[协议](http://www.zhihu.com/terms#sec-licence)
 - 让用户选择，比如500px， 在你发布照片的时候， 可以选择协议的组合
-{% photo images/blog/500px_license.png images/blog/500px_license.png 500px %}
+{% img /images/blog/500px_license.png%}
 
 
