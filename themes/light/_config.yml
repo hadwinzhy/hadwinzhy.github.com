@@ -4,14 +4,13 @@ menu:
 
 widgets: 
 - search
-- category
 - tag
 - twitter
 
 excerpt_link: Read More
 
 twitter:
-  username:
+  username: masterzheng
   show_replies: false
   tweet_count: 5
 
