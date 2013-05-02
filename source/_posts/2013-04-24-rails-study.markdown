@@ -45,7 +45,7 @@ development:
 {% endcodeblock %}
     
 ** Remember the test section will also be set to mySQL**
-
+<!-- more -->
 ## Hello Rails ##
 1. Try to run `rails generate controller home index`  then u will see many files created
     - create home folder and create index page
