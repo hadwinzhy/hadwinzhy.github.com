@@ -1,0 +1,523 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>JVM | Hadwin's Blog</title>
+  <meta name="author" content="Hadwin Zheng">
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+  <meta property="og:site_name" content="Hadwin's Blog"/>
+
+  
+    <meta property="og:image" content="undefined"/>
+  
+
+  <link href="/favicon.png" rel="icon">
+  <link rel="alternate" href="/atom.xml" title="Hadwin's Blog" type="application/atom+xml">
+  <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+  <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8/jquery.min.js"></script>
+  
+</head>
+
+
+<body>
+  <header id="header" class="inner"><div class="alignleft">
+  <h1><a href="/">Hadwin's Blog</a></h1>
+  <h2><a href="/">一个扛着摄像机的工程师，Gurudigger技术合伙人</a></h2>
+</div>
+<nav id="main-nav" class="alignright">
+  <ul>
+    
+      <li><a href="/">Home</a></li>
+    
+      <li><a href="/about">About</a></li>
+    
+      <li><a href="/archives">Archives</a></li>
+    
+  </ul>
+  <div class="clearfix"></div>
+</nav>
+<div class="clearfix"></div></header>
+  <div id="content" class="inner">
+    <div id="main-col" class="alignleft"><div id="wrapper">
+<h2 class="archive-title tag">JVM</h2>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-02-05T08:43:00.000Z"><a href="/2013/02/05/compile-optimize-of-jvm-part1/">Feb 5 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/02/05/compile-optimize-of-jvm-part1/">Compile Optimize of JVM (Compiler Period)</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <blockquote>
+<p>Compiler Period主要指javac的优化，而javac的优化体现在Syntactic Sugar</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+</pre></td><td class="code"><pre><span class="keyword">try</span> {
+     initProcessAnnotations(processors); <span class="comment">//处理Annotations</span>
+     <span class="comment">// These method calls must be chained to avoid memory leaks</span>
+     <span class="comment">/*
+     * parseFile for 词法分析 
+     * enterTrees for 语法分析
+     */</span>
+     delegateCompiler =
+         processAnnotations(
+            enterTrees(stopIfError(CompileState.PARSE, parseFiles(sourceFileObjects))),
+            classnames);            
+     delegateCompiler.compile2();
+     delegateCompiler.close();
+     elapsed_msec = delegateCompiler.elapsed_msec;
+} <span class="keyword">catch</span> (Abort ex) {
+    <span class="keyword">if</span> (devVerbose)
+        ex.printStackTrace(System.err);
+} 
+</pre></td></tr></table></figure>
+
+</blockquote>
+<h2>1. 词法分析</h2>
+<p>Called by method: <code>parseFiles(Iterable&lt;JavaFileObject&gt; fileObjects)</code> in <code>JavaCompiler.java</code> 
+为了看得更清楚, 先设 <code>scannerDebug = true;</code> in <code>Scanner.java</code></p>
+<h4>Step 1 :</h4>
+<p>new a JavacParser, 在new的时候就先处理第一个token.</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="keyword">protected</span> JavacParser(ParserFactory fac, Lexer S, <span class="keyword">boolean</span> keepDocComments, <span class="keyword">boolean</span> keepLineMap) {
+        <span class="keyword">this</span>.S = S;
+        S.nextToken(); <span class="comment">// prime the pump</span>
+        <span class="keyword">this</span>.F = fac.F;
+        <span class="keyword">this</span>.log = fac.log;
+</pre></td></tr></table></figure>
+
+<p>读取的方法还是<a href="http://en.wikipedia.org/wiki/LL\(1\">LL(1)</a>)</p>
+<p>大致步骤是：</p>
+<ol>
+<li><p>先判断是否是<code>class</code>,<code>interface</code>还是<code>Enum</code>, 然后跳到相应的不同Declaration去解析</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre></td><td class="code"><pre>JCStatement classOrInterfaceOrEnumDeclaration(JCModifiers mods, String dc) {
+    <span class="keyword">if</span> (S.token() == CLASS) {
+        <span class="keyword">return</span> classDeclaration(mods, dc);   <span class="comment">// for class</span>
+    } <span class="keyword">else</span> <span class="keyword">if</span> (S.token() == INTERFACE) {
+        <span class="keyword">return</span> interfaceDeclaration(mods, dc);  <span class="comment">//for interface</span>
+    } <span class="keyword">else</span> <span class="keyword">if</span> (allowEnums) {
+        <span class="keyword">if</span> (S.token() == ENUM) {     <span class="comment">// for enum</span>
+            <span class="keyword">return</span> enumDeclaration(mods, dc);
+        }
+        ...
+    }
+</pre></td></tr></table></figure>
+</li>
+<li><p>如果是一个<code>class</code> 第二步处理各种 method， 处理完之后返回一个<code>JCMethodDecl</code> 类
+比如 <code>public static void main（String[] args）</code> 这个方法最终生成如下</p>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+</pre></td><td class="code"><pre>JCMethodDecl MethodDef(JCModifiers mods, <span class="comment">// 解析 public static 之后产生的修饰flag</span>
+                       Name name, <span class="comment">// main</span>
+                       JCExpression restype,  <span class="comment">//void</span>
+                       List&lt;JCTypeParameter&gt; typarams, <span class="comment">//null</span>
+                       List&lt;JCVariableDecl&gt; params,  <span class="comment">//String[] args</span>
+                       List&lt;JCExpression&gt; thrown, <span class="comment">//null</span>
+                       JCBlock body, <span class="comment">//body of method</span>
+                       JCExpression defaultValue) <span class="comment">//null</span>
+</pre></td></tr></table></figure>
+</li>
+<li><p>所有的基本变量都是一个 <code>JCVariableDecl</code>， 包括一个JCModifiers表示修饰属性，Name表示名字，JCExpression init表示初始值 </p>
+</li>
+</ol>
+<figure class="highlight lang-java"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+</pre></td><td class="code"><pre><span class="javadoc">/**
+* A variable definition.
+* <span class="javadoctag">@param</span> modifiers variable modifiers
+* <span class="javadoctag">@param</span> name variable name
+* <span class="javadoctag">@param</span> vartype type of the variable
+* <span class="javadoctag">@param</span> init variables initial value
+* <span class="javadoctag">@param</span> sym symbol
+*/</span>
+<span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">JCVariableDecl</span> <span class="keyword">extends</span> <span class="title">JCStatement</span> <span class="keyword">implements</span> <span class="title">VariableTree</span>{</span>
+    <span class="keyword">protected</span> JCVariableDecl(JCModifiers mods,Name name, 
+                  JCExpression vartype, JCExpression init, VarSymbol sym) {
+        ...
+    }
+}    
+</pre></td></tr></table></figure>
+
+<ol>
+<li>接下来就是处理method内部block。 如果是一个expression， like： <code>System.out.println(&quot;Hello World&quot;)</code></li>
+</ol>
+
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2013/02/05/compile-optimize-of-jvm-part1/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+  
+    <article class="post">
+  
+  <div class="post-content">
+    <header>
+      
+        <div class="icon"></div>
+        <time datetime="2013-01-21T03:36:00.000Z"><a href="/2013/01/21/compile-jdk/">Jan 21 2013</a></time>
+      
+      
+  
+    <h1 class="title"><a href="/2013/01/21/compile-jdk/">编译 openJDK source code 札记</a></h1>
+  
+
+    </header>
+    <div class="entry">
+      
+        <h2>0. Prepare for Build</h2>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>sudo aptitude build-dep
+sudo apt-get install gawk
+</pre></td></tr></table></figure>
+
+
+<h2>1. Download JDK</h2>
+<ul>
+<li><p>这次准备从<a href="http://hg.openjdk.java.net/jdk7/jdk7">官网</a>的repo上直接取source code
+先下载 mercurial 和 hg</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+2
+</pre></td><td class="code"><pre>sudo apt-get install mercurial
+hg clone http://hg.openjdk.java.net/jdk7/jdk7
+</pre></td></tr></table></figure>
+</li>
+<li><p>其实真正的code 还没下载下来，需要运行 get_source.sh</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>cd jdk7/ &amp;&amp; sh get_source.sh
+</pre></td></tr></table></figure>
+</li>
+<li><p>最好再下载最新的binary <a href="http://jdk7.java.net/download.html"><a href="http://jdk7.java.net/download.html">http://jdk7.java.net/download.html</a></a></p>
+</li>
+</ul>
+<h2>2. Environment Setting</h2>
+<p>因为编译的时候可能会出现如下错误：  <code>ERROR: Cannot find source for project jaxp.</code></p>
+<p>这个需要下载，所以需要在make选项添加 <code>ALLOW_DOWNLOADS=true</code></p>
+<p>最终的编译脚本如下：</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+</pre></td><td class="code"><pre><span class="shebang">#!/bin/sh</span>
+export ALT_BOOTDIR=/usr/lib/jvm/java-7-openjdk-amd64/
+export ALT_HOTSPOT_IMPORT_PATH=/local/code/lang/jdk1.7.0_13/
+unset JAVA_HOME
+make LANG=C ALLOW_DOWNLOADS=<span class="literal">true</span> DISABLE_HOTSPOT_OS_VERSION_CHECK=ok 
+</pre></td></tr></table></figure>
+
+<h2>2. Build</h2>
+<h4>下面就是解决make出现的各种问题和解决方案：</h4>
+<ul>
+<li>ERROR: <code>You do not have access to valid Cups header files.</code></li>
+</ul>
+<p>需要安装cpus的dev包</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>sudo apt-get install libcups2-dev
+</pre></td></tr></table></figure>
+
+<ul>
+<li>ERROR: <code>The version of ant being used is older than the required version of &#39;1.7.1&#39;.  The version of ant found was &#39;&#39;.</code></li>
+</ul>
+<p>这说明没有装ant</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>sudo apt-get install ant
+</pre></td></tr></table></figure>
+
+<ul>
+<li>ERROR: <code>FreeType version  2.3.0  or higher is required.</code></li>
+</ul>
+<p>安装freetype的dev包</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>sudo apt-get install libfreetype6-dev
+</pre></td></tr></table></figure>
+
+<ul>
+<li>ERROR: <code>You seem to not have installed ALSA 0.9.1 or higher.</code></li>
+</ul>
+<p>不需要从ALSA官网下载alsa-dev和alsa-drive， ubuntu提供包的</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+</pre></td><td class="code"><pre>sudo apt-get install libasound2-dev
+</pre></td></tr></table></figure>
+
+<ul>
+<li>ERROR: <code>echo &quot;*** This OS is not supported:&quot; &#39;uname -a&#39;; exit 1;</code> </li>
+</ul>
+<p>很奇怪的错误，anyway，注释掉hotspot/make/linux/Makefile里面的checkOS</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+</pre></td><td class="code"><pre>check_os_version:
+<span class="comment">#ifeq ($(DISABLE_HOTSPOT_OS_VERSION_CHECK)$(EMPTY_IF_NOT_SUPPORTED),)</span>
+<span class="comment">#	$(QUIETLY) &gt;&amp;2 echo "*** This OS is not supported:" `uname -a`; exit 1;</span>
+<span class="comment">#endif</span>
+</pre></td></tr></table></figure>
+
+<p><strong>Update: 最好的办法是在make参数后面添加 DISABLE_HOTSPOT_OS_VERSION_CHECK=OK 即可</strong></p>
+<ul>
+<li>ERROR: <code>error: &quot;__LEAF&quot; redefined [-Werror]</code>  </li>
+</ul>
+<p>这个是已知的<a href="http://hg.openjdk.java.net/hsx/hotspot-comp/hotspot/rev/a6eef545f1a2">bug</a>,
+在hopspot下打入该<a href="http://hg.openjdk.java.net/hsx/hotspot-comp/hotspot/raw-rev/a6eef545f1a2">patch</a>即可</p>
+<ul>
+<li>ERROR <code>error: converting ‘false’ to pointer type ‘methodOop’ [-Werror=conversion-null]</code> </li>
+</ul>
+<p>这个的问题是把 false 转换成 NULL的时候出错了</p>
+<p>同样在hotspot下 打入该 <a href="http://hg.openjdk.java.net/hsx/hotspot-rt/hotspot/raw-rev/f457154eee8b">patch</a></p>
+<ul>
+<li>ERROR <code>gcc: error: unrecognized command line option &#39;-mimpure-text&#39;</code></li>
+</ul>
+<p>这个<code>-mimpure-text</code>是gcc给Solaris的编译选项，所以注释掉即可</p>
+<p>文件在<code>./jdk/make/common/shared/Compiler-gcc.gmk +70</code></p>
+<ul>
+<li>ERROR <code>undefined reference to &#39;snd_pcm_format_**&#39;</code></li>
+</ul>
+<p>folow this link <a href="http://comments.gmane.org/gmane.comp.java.openjdk.build.devel/5311">Build openjdk in Ubuntu 11.10</a>
+在<code>jdk/make/javax/sound/jsoundalsa/Makefile</code> 里面</p>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+</pre></td><td class="code"><pre>@@ -65,7 +65,7 @@
+ 	$(MIDIFILES_export) \
+ 	$(PORTFILES_export)
+    
+-LDFLAGS += -lasound
++OTHER_LDLIBS += -lasound
+
+CPPFLAGS += \
+ 	-DUSE_DAUDIO=TRUE \
+</pre></td></tr></table></figure>
+
+<h2>4. Success Output</h2>
+<figure class="highlight lang-bash"><table><tr><td class="gutter"><pre>1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+</pre></td><td class="code"><pre><span class="comment">########################################################################</span>
+<span class="comment">##### Leaving jdk for target(s) sanity all docs images             #####</span>
+<span class="comment">########################################################################</span>
+<span class="comment">##### Build time 00:05:35 jdk for target(s) sanity all docs images #####</span>
+<span class="comment">########################################################################</span>
+
+-- Build times ----------
+Target all_product_build
+Start 2013-02-05 13:47:18
+End   2013-02-05 13:53:04
+00:00:03 corba
+00:00:02 jaxp
+00:00:03 jaxws
+00:05:35 jdk
+00:00:03 langtools
+00:05:46 TOTAL
+-------------------------
+</pre></td></tr></table></figure>
+      
+    </div>
+    <footer>
+      
+        
+          <div class="alignleft">
+            <a href="/2013/01/21/compile-jdk/#more" class="more-link">Read More</a>
+          </div>
+        
+        
+      
+      <div class="clearfix"></div>
+    </footer>
+  </div>
+</article>
+
+
+  
+
+  <nav id="pagination">
+  
+  
+  <div class="clearfix"></div>
+</nav>
+</div></div>
+    <aside id="sidebar" class="alignright">
+  <div class="search">
+  <form action="//google.com/search" method="get" accept-charset="utf-8">
+    <input type="search" name="q" results="0" placeholder="Search">
+    <input type="hidden" name="q" value="site:hadwinzhy.com">
+  </form>
+</div>
+
+  
+<div class="widget tag">
+  <h3 class="title">Tags</h3>
+  <ul class="entry">
+  
+    <li><a href="/tags/ACM/">ACM</a><small>1</small></li>
+  
+    <li><a href="/tags/Book_Notes/">Book_Notes</a><small>2</small></li>
+  
+    <li><a href="/tags/Compiler/">Compiler</a><small>1</small></li>
+  
+    <li><a href="/tags/Idea/">Idea</a><small>1</small></li>
+  
+    <li><a href="/tags/JVM/">JVM</a><small>2</small></li>
+  
+    <li><a href="/tags/Life/">Life</a><small>1</small></li>
+  
+    <li><a href="/tags/RubyRails/">RubyRails</a><small>1</small></li>
+  
+    <li><a href="/tags/Travel/">Travel</a><small>1</small></li>
+  
+    <li><a href="/tags/WebTech/">WebTech</a><small>1</small></li>
+  
+    <li><a href="/tags/下午茶/">下午茶</a><small>1</small></li>
+  
+  </ul>
+</div>
+
+
+  
+<div class="widget twitter">
+  <h3 class="title">Tweets</h3>
+  <ul id="tweets"></ul>
+</div>
+
+<script type="text/javascript">
+var twitter_stream = ['masterzheng', 5, false];
+var moment_js_path = '/js/moment.min.js';
+</script>
+<script src="/js/twitter.js"></script>
+
+
+</aside>
+    <div class="clearfix"></div>
+  </div>
+  <footer id="footer" class="inner"><div class="alignleft">
+  
+  &copy; 2013 Hadwin Zheng
+  
+</div>
+<div class="clearfix"></div></footer>
+  <script src="/js/jquery.imagesloaded.min.js"></script>
+<script src="/js/gallery.js"></script>
+
+
+<script type="text/javascript">
+var disqus_shortname = 'hadwinzhy';
+
+(function(){
+  var dsq = document.createElement('script');
+  dsq.type = 'text/javascript';
+  dsq.async = true;
+  dsq.src = '//' + disqus_shortname + '.disqus.com/count.js';
+  (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+}());
+</script>
+
+
+
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.css" media="screen" type="text/css">
+<script src="/fancybox/jquery.fancybox.pack.js"></script>
+<script type="text/javascript">
+(function($){
+  $('.fancybox').fancybox();
+})(jQuery);
+</script>
+
+</body>
+</html>
