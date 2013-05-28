@@ -4,7 +4,7 @@
 
 # Site
 title: Hadwin's Blog
-subtitle: 一个扛着摄像机的工程师，Gurudigger技术合伙人
+subtitle: Developer, Photographer and now is Co-Founder at Gurudigger
 description:
 author: Hadwin Zheng
 email: hadwinzhy@gmail.com
@@ -80,3 +80,6 @@ deploy:
   type: github
   repository: git@github.com:hadwinzhy/hadwinzhy.github.com.git
   branch: master
+
+
+#plugins:
