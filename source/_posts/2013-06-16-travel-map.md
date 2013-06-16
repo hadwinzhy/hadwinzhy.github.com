@@ -1,6 +1,6 @@
 title: Travel Map via Google Map Engine
 date: 2013-06-16 23:21:40
-tags:
+tags: [Travel, WebTech]
 ---
 
 尝试了一下[Google Map Engine Lite](https://mapsengine.google.com/map/), 用最新的Google Map UI设计的,但似乎现在个人定制化还不是那么的强
