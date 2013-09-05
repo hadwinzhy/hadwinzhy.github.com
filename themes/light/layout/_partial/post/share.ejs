@@ -1,5 +1,8 @@
 <% if (theme.addthis.enable){ %>
   <div class="addthis addthis_toolbox addthis_default_style">
+    <% if (theme.addthis.weibo){ %>
+    <wb:share-button appkey="4RnYKk" addition="number" type="button" ralateUid="1653855452" language="zh_cn"></wb:share-button>
+    <% } %>
     <% if (theme.addthis.facebook){ %>
       <a class="addthis_button_facebook_like" fb:like:layout="button_count"></a>
     <% } %>

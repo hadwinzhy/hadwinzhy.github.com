@@ -3,7 +3,7 @@ menu:
   About: /about
   Archives: /archives
 
-widgets: 
+widgets:
 - search
 - tag
 - twitter
@@ -18,10 +18,11 @@ twitter:
 addthis:
   enable: true
   pubid:
-  facebook: true
+  facebook: false
   twitter: true
-  google: true
-  pinterest: true
+  google: false
+  pinterest: false
+  weibo: true
 
 fancybox: true
 
